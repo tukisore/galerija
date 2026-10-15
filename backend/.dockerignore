@@ -1,0 +1,9 @@
+# build output, editor state, local data and secrets stay out of the image
+.scala-build
+.bsp
+.metals
+.bloop
+db
+db.*
+media
+.env

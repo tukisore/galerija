@@ -1,0 +1,11 @@
+//> using scala "3.3.7"
+//> using dep "com.lihaoyi::cask:0.11.3"
+//> using dep "com.lihaoyi::ujson:4.4.0"
+//> using dep "com.lihaoyi::upickle:4.3.2"
+
+//> using dep "com.typesafe.slick::slick:3.6.1"
+//> using dep "org.xerial:sqlite-jdbc:3.50.3.0"
+//> using dep "org.slf4j:slf4j-nop:2.0.17"
+//> using dep "com.drewnoakes:metadata-extractor:2.19.0"
+//> using dep "com.auth0:java-jwt:4.5.0"
+//> using exclude "front"

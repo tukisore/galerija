@@ -1,0 +1,25 @@
+# Scala CLI
+.scala-build/
+.bsp/
+
+# Metals / Bloop
+.metals/
+.bloop/
+metals.sbt
+
+# Compiled output
+*.class
+*.jar
+*.log
+target/
+db
+db.int-ids.bak
+# Editors / OS
+.idea/
+.DS_Store
+
+# Uploaded media files
+media/
+
+# Local settings and secrets (backend/.env.example lists them)
+.env

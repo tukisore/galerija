@@ -1,0 +1,246 @@
+@import "tailwindcss";
+
+:root {
+  --background: #f6f7f9;
+  --surface: #ffffff;
+  --foreground: #16181d;
+  --muted: #667085;
+  --border: #e2e5ea;
+  --accent: #2f5bea;
+  --accent-foreground: #ffffff;
+  --accent-soft: #e9eefd;
+  --danger: #c93030;
+  --danger-soft: #fdecec;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0f1115;
+    --surface: #181b21;
+    --foreground: #e8eaee;
+    --muted: #98a1b0;
+    --border: #2a2e37;
+    --accent: #6f8ffa;
+    --accent-foreground: #0f1115;
+    --accent-soft: #1f2740;
+    --danger: #f07272;
+    --danger-soft: #3a1c1f;
+  }
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-border: var(--border);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-danger: var(--danger);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  font-size: 14px;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.input {
+  min-width: 0;
+  height: 34px;
+  padding: 0 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  color: var(--foreground);
+}
+
+.input:focus-visible,
+.btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.rich {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.rich-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+/* Floats above the box instead of pushing it down: a layout shift on focus change would move
+   whatever the user is in the middle of clicking. */
+.rich[data-toolbar="focus"] {
+  position: relative;
+}
+
+.rich[data-toolbar="focus"] .rich-toolbar {
+  position: absolute;
+  bottom: calc(100% + 4px);
+  left: 0;
+  z-index: 5;
+  flex-wrap: nowrap;
+  padding: 4px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  box-shadow: 0 4px 14px rgb(0 0 0 / 0.12);
+}
+
+.rich[data-toolbar="focus"]:not(:focus-within) .rich-toolbar {
+  display: none;
+}
+
+.rich-toolbar .btn {
+  min-width: 28px;
+  padding: 0 7px;
+}
+
+.rich-editor {
+  height: auto;
+  min-height: 34px;
+  padding: 6px 10px;
+  line-height: 20px;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+  color: var(--foreground);
+  font-size: 14px;
+}
+
+.rich-editor:empty::before {
+  content: attr(data-placeholder);
+  color: var(--muted);
+}
+
+.rich-editor ul,
+.rich-editor ol,
+.rich-content ul,
+.rich-content ol {
+  padding-left: 22px;
+}
+
+.rich-editor ul,
+.rich-content ul {
+  list-style: disc;
+}
+
+.rich-editor ol,
+.rich-content ol {
+  list-style: decimal;
+}
+
+.rich-editor a,
+.rich-content a {
+  color: var(--accent);
+  text-decoration: underline;
+}
+
+.input:user-invalid {
+  border-color: var(--danger);
+}
+
+.input[type="file"] {
+  height: auto;
+  padding: 5px 8px;
+}
+
+.label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.btn {
+  height: 34px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--surface);
+  color: var(--foreground);
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.btn:hover:not(:disabled) {
+  border-color: var(--muted);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-foreground);
+}
+
+.btn-danger {
+  color: var(--danger);
+}
+
+.btn-small {
+  height: 28px;
+  padding: 0 9px;
+  font-size: 13px;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table th {
+  padding: 10px 14px;
+  text-align: left;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+  border-bottom: 1px solid var(--border);
+}
+
+.table td {
+  padding: 9px 14px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+
+.table tr:last-child td {
+  border-bottom: none;
+}
+
+.badge {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.banner-error {
+  padding: 9px 12px;
+  border-radius: 7px;
+  background: var(--danger-soft);
+  color: var(--danger);
+}
