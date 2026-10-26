@@ -12,7 +12,7 @@ case class AlbumController()(using cc: castor.Context, log: cask.Logger) extends
   def get(id: String, request: cask.Request) =
     await(Db.findAlbum(id)).filter(_.public || Auth.isAdmin(request)) match
       case Some(album) => json(album)
-      case None => notFound(id)subalbum
+      case None => notFound(id)
 
   // the id is always generated here; one sent in the body is ignored
   @adminOnly()
