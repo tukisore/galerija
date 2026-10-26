@@ -71,7 +71,29 @@ docker compose up -d --build
 
 The site is then at http://localhost:3000 (set `FRONT_PORT` to use another port). The backend is not published; the front reaches it inside the compose network.
 
-- The backend reads its settings from `backend/.env`, as in development, and uses the same `backend/db` and `backend/media`.
+- The backend reads its settings from `backend/.env`, as in development, and uses the same `backend/media`; its database is the `postgres` service.
 - The backend image is Ubuntu 24.04 with its OpenJDK 21 and Scala CLI 1.17.1 (the `SCALA_CLI_VERSION` build argument), and starts the server with `scala-cli run`.
-- PostgreSQL 17 runs as `postgres` on `127.0.0.1:5432`, with user, password and database `scalaweb` unless `POSTGRES_USER`, `POSTGRES_PASSWORD` and `POSTGRES_DB` are set. The backend does not use it yet: it still stores its data in SQLite.
+- PostgreSQL 17 runs as `postgres` on `127.0.0.1:5432`, with user, password and database `scalaweb` unless `POSTGRES_USER`, `POSTGRES_PASSWORD` and `POSTGRES_DB` are set.
 - Stop `npm run dev` first, or set `FRONT_PORT`, since both use port 3000.
+
+## Backups
+
+`backup.sh` backs up the database and the uploaded media of the Docker Compose app into a folder, with [restic](https://restic.net) (run in a container, nothing to install). After the first backup only what changed is stored, and every backup is still a full restore point. The last 7 daily, 4 weekly and 12 monthly backups are kept.
+
+Set a password in a `.env` file next to `docker-compose.yml`; the backups are encrypted with it and **cannot be restored without it**, so keep a copy somewhere else:
+
+```bash
+RESTIC_PASSWORD=some-long-random-password
+# optional, default ./backups; put it on another disk to survive this one failing
+BACKUP_DIR=/mnt/usb/galerija-backups
+```
+
+With the app running (`docker compose up -d`):
+
+```bash
+./backup.sh            # back up now
+./restore.sh           # list the backups
+./restore.sh latest    # restore the newest one (or pass a snapshot id)
+```
+
+A restore replaces the current database and media; it backs up the current state first, so it can be undone. To back up every night, run `backup.sh` from cron (`0 3 * * * /path/to/galerija/backup.sh`) or, on Windows, from Task Scheduler with Git Bash.

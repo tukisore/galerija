@@ -52,5 +52,20 @@ services:
     ports:
       - "${FRONT_PORT:-3008}:3000"
 
+  # restic, for ./backup.sh and ./restore.sh; not started by docker compose up
+  backup:
+    image: restic/restic:0.18.1
+    profiles: [tools]
+    environment:
+      RESTIC_REPOSITORY: /repo
+      # encrypts the backups, which cannot be read without it
+      RESTIC_PASSWORD: ${RESTIC_PASSWORD:-}
+    volumes:
+      # the backup folder
+      - ${BACKUP_DIR:-./backups}:/repo
+      - ./backend/media:/data/media
+      # the database dump, written by backup.sh
+      - ./.backup-tmp:/data/db
+
 volumes:
   postgres-data:

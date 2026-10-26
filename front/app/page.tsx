@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { albums, looseMedia, type Album, type Media } from "@/lib/api";
 import { images, taken } from "@/lib/albums";
 import { fileUrl, isImage } from "@/lib/files";
@@ -28,9 +29,9 @@ function Hero({ photo, album }: { photo?: Media; album?: Album }) {
       <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#111317]/40 to-[#111317]" />
       <div className="relative mx-auto flex h-full max-w-[1464px] flex-col justify-end gap-4 px-4 pb-10 md:flex-row md:items-end md:justify-between md:px-8 md:pb-14">
         <h1 className="max-w-2xl text-5xl font-extrabold leading-[0.95] tracking-tighter md:text-7xl">
-          Moments worth keeping.
+          -
         </h1>
-        {caption && <p className="text-white/75">{["Latest photo", ...caption].join(" · ")}</p>}
+        {caption && caption.length > 0 && <p className="text-white/75">{caption.join(" · ")}</p>}
       </div>
     </section>
   );
@@ -38,21 +39,25 @@ function Hero({ photo, album }: { photo?: Media; album?: Album }) {
 
 /**
  * The public front page: the photos that are in no album and the public albums, the latest added
- * first. The latest uploaded loose photo is also the hero.
+ * first. The hero is a random one of their photos.
  */
 export default function Home() {
   const albumList = useList(albums.list);
   const looseList = useList(looseMedia);
   const error = albumList.error ?? looseList.error;
+  // picked once per visit, so the hero stays put when the lists reload
+  const [heroPick] = useState(Math.random);
 
   // an admin is sent the private albums too; an album without photos has nothing to show yet
   const publicAlbums = (albumList.items ?? []).filter((album) => album.public && images(album).length > 0);
   const loose = (looseList.items ?? [])
     .filter((media) => isImage(media.filename))
     .sort((a, b) => b.created.localeCompare(a.created));
-  // without loose photos the hero is the cover of the newest album, which stays in its block
-  const newestAlbum = [...publicAlbums].sort((a, b) => albumDate(b).localeCompare(albumDate(a)))[0];
-  const hero = loose[0] ?? (newestAlbum && images(newestAlbum)[0]);
+  const heroChoices: { photo: Media; album?: Album }[] = [
+    ...loose.map((photo) => ({ photo })),
+    ...publicAlbums.flatMap((album) => images(album).map((photo) => ({ photo, album }))),
+  ];
+  const hero = heroChoices[Math.floor(heroPick * heroChoices.length)];
 
   const entries = [
     ...publicAlbums.map((album) => ({ date: albumDate(album), album })),
@@ -70,7 +75,7 @@ export default function Home() {
   return (
     <div className="flex flex-1 flex-col">
       <SiteHeader onUploaded={() => looseList.run(async () => {})} />
-      <Hero photo={hero} album={loose.length ? undefined : newestAlbum} />
+      <Hero photo={hero?.photo} album={hero?.album} />
 
       <main className="mx-auto flex w-full max-w-[1464px] flex-1 flex-col gap-12 px-4 py-10 md:px-8">
         {error && (

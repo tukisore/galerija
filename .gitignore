@@ -23,3 +23,7 @@ media/
 
 # Local settings and secrets (backend/.env.example lists them)
 .env
+
+# Backups (backup.sh, restore.sh)
+backups/
+.backup-tmp/
