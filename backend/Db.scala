@@ -1,12 +1,28 @@
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import slick.jdbc.SQLiteProfile.api.*
+import scala.jdk.CollectionConverters.*
+import slick.jdbc.{JdbcProfile, PostgresProfile, SQLiteProfile}
 
+/** PostgreSQL when DB_URL is set (a jdbc:postgresql:// URL), otherwise the SQLite file at DB_PATH. */
 object Db:
-  private val db = Database.forURL(
-    "jdbc:sqlite:" + Env.vars.getOrElse("DB_PATH", "db"),
-    driver = "org.sqlite.JDBC",
-  )
+  private val postgresUrl = Env.vars.get("DB_URL")
+
+  val profile: JdbcProfile = if postgresUrl.isDefined then PostgresProfile else SQLiteProfile
+  import profile.api.*
+
+  private val db = postgresUrl match
+    case Some(url) =>
+      // a HikariCP connection pool
+      val config = Map[String, Any](
+        "url" -> url,
+        "driver" -> "org.postgresql.Driver",
+        "user" -> Env.vars.getOrElse("DB_USER", ""),
+        "password" -> Env.vars.getOrElse("DB_PASSWORD", ""),
+        "numThreads" -> 10,
+      )
+      Database.forConfig("", com.typesafe.config.ConfigFactory.parseMap(config.asJava))
+    case None =>
+      Database.forURL("jdbc:sqlite:" + Env.vars.getOrElse("DB_PATH", "db"), driver = "org.sqlite.JDBC")
 
   private given BaseColumnType[Role] = MappedColumnType.base[Role, String](_.key, Role.valueOf.compose(_.capitalize))
 

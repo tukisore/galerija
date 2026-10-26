@@ -27,12 +27,16 @@ services:
     env_file:
       - path: ./backend/.env
         required: false
+    depends_on:
+      postgres:
+        condition: service_healthy
     environment:
-      DB_PATH: /data/db
+      DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-scalaweb}
+      DB_USER: ${POSTGRES_USER:-scalaweb}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-scalaweb}
       MEDIA_DIR: /data/media
     volumes:
-      # the same database and uploads as when running it with scala-cli
-      - ./backend/db:/data/db
+      # the same uploads as when running it with scala-cli
       - ./backend/media:/data/media
     # not published: the front reaches it inside the compose network, and the browser through the front
 
@@ -46,7 +50,7 @@ services:
     depends_on:
       - backend
     ports:
-      - "${FRONT_PORT:-3000}:3000"
+      - "${FRONT_PORT:-3008}:3000"
 
 volumes:
   postgres-data:

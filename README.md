@@ -1,6 +1,6 @@
 # scala-web
 
-Scala 3 backend ([Cask](https://com-lihaoyi.github.io/cask/) + Slick + SQLite) in `backend/`, with a Next.js frontend in `front/`.
+Scala 3 backend ([Cask](https://com-lihaoyi.github.io/cask/) + Slick + SQLite or PostgreSQL) in `backend/`, with a Next.js frontend in `front/`.
 
 ## Running the server
 
@@ -16,7 +16,7 @@ The server listens on http://localhost:8080.
 
 `--main-class Main` is needed because the project has two entry points: `Main` (the server, in `Main.scala`) and `hello` (a standalone script in `hello.scala`).
 
-Dependencies and the Scala version are declared in `project.scala` and are downloaded on the first run. The SQLite database file and its tables are created automatically on startup.
+Dependencies and the Scala version are declared in `project.scala` and are downloaded on the first run. The database tables (and, for SQLite, the database file) are created automatically on startup.
 
 To restart automatically when a source file changes:
 
@@ -32,7 +32,10 @@ All settings are optional. Put them in `backend/.env` (start from `backend/.env.
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
-| `DB_PATH` | `db` | SQLite database file |
+| `DB_URL` | unset | PostgreSQL JDBC URL, e.g. `jdbc:postgresql://localhost:5432/scalaweb`; when unset, SQLite is used |
+| `DB_USER` | empty | PostgreSQL user |
+| `DB_PASSWORD` | empty | PostgreSQL password |
+| `DB_PATH` | `db` | SQLite database file, used when `DB_URL` is unset |
 | `MEDIA_DIR` | `media` | Directory for uploaded media files |
 | `JWT_SECRET` | built-in fallback | Secret used to sign login tokens; set it in production |
 | `COOKIE_SECURE` | unset | Set to `true` to mark the auth cookie `Secure` (HTTPS only) |
