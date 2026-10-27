@@ -18,4 +18,4 @@ RUN scala-cli compile . --server=false --jvm system
 
 ENV HOST=0.0.0.0
 EXPOSE 8080
-CMD ["scala-cli", "run", ".", "--main-class", "Main", "--server=false", "--jvm", "system"]
+CMD ["scala-cli", "run", ".", "--main-class", "Main", "--server=false", "--jvm", "system", "--watch"]

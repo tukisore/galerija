@@ -125,8 +125,15 @@ object Db:
   val albums = TableQuery[Albums]
   val albumChilds = TableQuery[AlbumChilds]
 
+  // creates only the missing tables: Slick's createIfNotExists adds the composite primary key of
+  // album_child with an unguarded ALTER TABLE on PostgreSQL, which fails once the table exists
   def init(): Future[Unit] =
-    db.run((users.schema ++ medias.schema ++ texts.schema ++ albums.schema ++ albumChilds.schema).createIfNotExists)
+    val tables = List(users, medias, texts, albums, albumChilds)
+    for
+      existing <- db.run(slick.jdbc.meta.MTable.getTables(None, None, None, Some(Seq("TABLE"))))
+      names = existing.map(_.name.name).toSet
+      _ <- db.run(DBIO.seq(tables.filterNot(t => names(t.baseTableRow.tableName)).map(_.schema.create)*))
+    yield ()
 
   // Every save sets updated to now and keeps created from the stored row (now for a new row);
   // the saved entity is returned with both.
