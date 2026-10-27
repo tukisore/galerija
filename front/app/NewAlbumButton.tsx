@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { albums } from "@/lib/api";
+import { appendChilds } from "@/lib/albums";
 
 function today() {
   const now = new Date();
@@ -10,8 +11,11 @@ function today() {
   return new Date(now.getTime() - now.getTimezoneOffset() * 60_000).toISOString().slice(0, 10);
 }
 
-/** Opens a small form for a new album; once created, the album opens in its editor to be filled in. */
-export default function NewAlbumButton() {
+/**
+ * Opens a small form for a new album; once created, it is added to the end of parentId (when given) and opens in its
+ * editor to be filled in.
+ */
+export default function NewAlbumButton({ parentId }: { parentId?: string }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
@@ -25,6 +29,7 @@ export default function NewAlbumButton() {
     setError(null);
     try {
       const album = await albums.create({ name: name.trim(), startDate });
+      if (parentId) await appendChilds(parentId, [{ type: "album", value: album }]);
       router.push(`/admin/albums/${album.id}`);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));

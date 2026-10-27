@@ -35,6 +35,8 @@ export type MediaInput = {
   fileDate?: string;
   coordinates?: Coordinates;
   description?: string;
+  // on create: the album the file is uploaded into, so the backend keeps it in that album's folder
+  album?: string;
 };
 
 export type Text = { id?: string; name: string } & Stamps;

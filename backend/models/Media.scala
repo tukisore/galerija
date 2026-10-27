@@ -22,6 +22,8 @@ case class Media(
   fileCreated: String = "",
   // EXIF tags read from the file at upload, by tag name
   exif: Map[String, String] = Map.empty,
+  // the subfolder of the media folder the file is in: the id of the album it was uploaded into, or empty
+  folder: String = "",
 )
 
 object Media:
@@ -36,6 +38,8 @@ case class MediaUpload(
   description: Option[String] = None,
   // the file's last-modified time (ISO instant), used as its creation date when it has no EXIF capture time
   fileDate: String = "",
+  // on POST: the id of the album the file is uploaded into, so it is kept in that album's folder
+  album: String = "",
 )
 
 object MediaUpload:

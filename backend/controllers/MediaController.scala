@@ -26,30 +26,38 @@ case class MediaController()(using cc: castor.Context, log: cask.Logger) extends
         cask.Response(bytes, headers = headers)
       case None => cask.Response(s"Media $id not found".getBytes, 404)
 
-  // body is the base64-encoded file; the id is set here, and EXIF, file date and GPS position are read from the file
+  // body is the base64-encoded file; the id is set here, and EXIF, file date and GPS position are read from the file.
+  // The file is kept in the folder of the album it is uploaded into, under its filename, with " (1)", " (2)", ... added
+  // when other media in that folder has it.
   @adminOnly()
   @cask.post("/media")
   def create(request: cask.Request) = withBody[MediaUpload](request) { upload =>
     if upload.filename.isEmpty then error(400, "filename is required")
+    else if upload.album.nonEmpty && !await(Db.albumExists(upload.album)) then
+      error(400, s"Album ${upload.album} not found")
     else
       MediaFiles.decode(upload.body) match
         case None => invalidBody
         case Some(bytes) =>
           val metadata = MediaMetadata.read(bytes)
-          val media = Media(
-            id = Uid.next(),
-            name = if upload.name.isEmpty then upload.filename else upload.name,
-            filename = upload.filename,
+          val id = Uid.next()
+          val stored = MediaFiles.create(
+            Media(id = id, filename = upload.filename, folder = upload.album),
+            bytes,
+            taken(id, upload.album),
+          )
+          val media = stored.copy(
+            name = if upload.name.isEmpty then stored.filename else upload.name,
             coordinates = upload.coordinates.orElse(metadata.coordinates),
             description = upload.description.getOrElse(""),
             fileCreated = metadata.taken.orElse(MediaMetadata.fileDate(upload.fileDate)).getOrElse(""),
             exif = metadata.exif,
           )
-          MediaFiles.write(media, bytes)
           json(await(Db.saveMedia(media)), 201)
   }
 
-  // fields left out keep their value; the file is replaced only when body is sent
+  // fields left out keep their value; the file is replaced only when body is sent. A new filename gets " (1)", " (2)",
+  // ... added when other media in its folder has it.
   @adminOnly()
   @cask.put("/media/:id")
   def update(id: String, request: cask.Request) = withBody[MediaUpload](request) { upload =>
@@ -58,7 +66,9 @@ case class MediaController()(using cc: castor.Context, log: cask.Logger) extends
       case Some(existing) =>
         val media = existing.copy(
           name = if upload.name.isEmpty then existing.name else upload.name,
-          filename = if upload.filename.isEmpty then existing.filename else upload.filename,
+          filename =
+            if upload.filename.isEmpty || upload.filename == existing.filename then existing.filename
+            else MediaFiles.free(existing, upload.filename, taken(id, existing.folder)).filename,
           coordinates = upload.coordinates.orElse(existing.coordinates),
           description = upload.description.getOrElse(existing.description),
         )
@@ -91,6 +101,9 @@ case class MediaController()(using cc: castor.Context, log: cask.Logger) extends
         noContent
 
   private def notFound(id: String) = error(404, s"Media $id not found")
+
+  // whether media other than id has the filename in the folder
+  private def taken(id: String, folder: String)(filename: String) = await(Db.filenameTaken(filename, folder, id))
 
   private def invalidBody = error(400, "body must be a base64-encoded file")
 

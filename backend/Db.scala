@@ -61,8 +61,9 @@ object Db:
     def fileCreated = column[String]("file_created")
     // EXIF tags as a JSON object
     def exif = column[String]("exif")
-    def * = (id, name, filename, created, lat, lon, description, updated, fileCreated, exif) <> (
-      (id, name, filename, created, lat, lon, description, updated, fileCreated, exif) =>
+    def folder = column[String]("folder", O.Default(""))
+    def * = (id, name, filename, created, lat, lon, description, updated, fileCreated, exif, folder) <> (
+      (id, name, filename, created, lat, lon, description, updated, fileCreated, exif, folder) =>
         Media(
           id,
           name,
@@ -73,6 +74,7 @@ object Db:
           updated,
           fileCreated,
           if exif.isEmpty then Map.empty else upickle.default.read[Map[String, String]](exif),
+          folder,
         ),
       m =>
         Some(
@@ -87,6 +89,7 @@ object Db:
             m.updated,
             m.fileCreated,
             upickle.default.write(m.exif),
+            m.folder,
           )
         ),
     )
@@ -133,6 +136,11 @@ object Db:
       existing <- db.run(slick.jdbc.meta.MTable.getTables(None, None, None, Some(Seq("TABLE"))))
       names = existing.map(_.name.name).toSet
       _ <- db.run(DBIO.seq(tables.filterNot(t => names(t.baseTableRow.tableName)).map(_.schema.create)*))
+      // columns added since the table was first made
+      mediaColumns <- existing.find(_.name.name == "media").fold(Future.successful(Vector.empty))(t => db.run(t.getColumns))
+      _ <-
+        if mediaColumns.isEmpty || mediaColumns.exists(_.name == "folder") then Future.unit
+        else db.run(sqlu"alter table media add column folder varchar not null default ''")
     yield ()
 
   // Every save sets updated to now and keeps created from the stored row (now for a new row);
@@ -181,6 +189,10 @@ object Db:
 
   def findMedia(id: String): Future[Option[Media]] = db.run(medias.filter(_.id === id).result.headOption)
 
+  /** Whether media other than exceptId has this filename in the folder. */
+  def filenameTaken(filename: String, folder: String, exceptId: String): Future[Boolean] =
+    db.run(medias.filter(m => m.filename === filename && m.folder === folder && m.id =!= exceptId).exists.result)
+
   def allMedia(): Future[Seq[Media]] = db.run(medias.sortBy(_.id).result)
 
   /** The media that is in no album. */
@@ -215,6 +227,8 @@ object Db:
   def saveAlbum(album: Album): Future[Unit] = db.run(storeAlbum(album).transactionally)
 
   def findAlbum(id: String): Future[Option[Album]] = db.run(loadAlbum(id))
+
+  def albumExists(id: String): Future[Boolean] = db.run(albums.filter(_.id === id).exists.result)
 
   def allAlbums(): Future[Seq[Album]] = db.run(
     albums.sortBy(_.id).map(_.id).result.flatMap(ids => DBIO.sequence(ids.map(loadAlbum))).map(_.flatten)

@@ -35,15 +35,21 @@ case class AlbumController()(using cc: castor.Context, log: cask.Logger) extends
 
   private def notFound(id: String) = error(404, s"Album $id not found")
 
+  // a new album's id is made from its name, so its url reads like it: /albums/kelione-i-siaulius
   private def save(body: Album, status: Int) =
-    val album = body.withMissingIds
+    val assigned = collection.mutable.Set[String]()
+    val album = body.withMissingIds { name =>
+      val id = Slug.unique(name, id => assigned(id) || await(Db.albumExists(id)))
+      assigned += id
+      id
+    }
     await(Db.saveAlbum(album))
     json(await(Db.findAlbum(album.id)).getOrElse(album), status)
 
   // album and text childs may carry the id of an existing entity, ones without an id get a new one;
   // media childs must be the id of an uploaded media
   private def childError(album: Album): Option[Res] =
-    val invalid = album.ids.tail.filter(id => id.nonEmpty && !Uid.isValid(id))
+    val invalid = album.ids.tail.filter(id => id.nonEmpty && !Slug.isValid(id))
     val missingMedia = album.medias.map(_.id).filter(id => id.isEmpty || await(Db.findMedia(id)).isEmpty)
     val missingHoverImages =
       album.albums.map(_.hoverImage).filter(id => id.nonEmpty && await(Db.findMedia(id)).isEmpty)
@@ -51,7 +57,7 @@ case class AlbumController()(using cc: castor.Context, log: cask.Logger) extends
       (if album.startDate.isEmpty then List("startDate is required") else Nil) ++ album.albums.flatMap(_.dateError)
     if dateErrors.nonEmpty then Some(error(400, dateErrors.mkString("; ")))
     else if invalid.nonEmpty then
-      Some(error(400, s"Invalid child ids (must be ${Uid.length} characters): ${invalid.mkString(", ")}"))
+      Some(error(400, s"Invalid child ids (must be lowercase letters, digits and dashes): ${invalid.mkString(", ")}"))
     else if missingMedia.nonEmpty then
       Some(error(400, s"Media childs must be uploaded first, not found: ${missingMedia.mkString(", ")}"))
     else if missingHoverImages.nonEmpty then

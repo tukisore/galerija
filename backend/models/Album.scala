@@ -47,11 +47,11 @@ case class Album(
     case _: Text  => Nil
   }
 
-  /** Gives a new id to the album and every nested album or text that has none. */
-  def withMissingIds: Album = copy(
-    id = Uid.orNew(id),
+  /** Gives a new id to the album and every nested album or text that has none; an album's is made by albumId from its name. */
+  def withMissingIds(albumId: String => String): Album = copy(
+    id = if id.isEmpty then albumId(name) else id,
     childs = childs.map {
-      case a: Album => a.withMissingIds
+      case a: Album => a.withMissingIds(albumId)
       case m: Media => m
       case t: Text  => t.copy(id = Uid.orNew(t.id))
     },

@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { auth, media, type User } from "@/lib/api";
+import { auth, media, type Child, type User } from "@/lib/api";
+import { appendChilds } from "@/lib/albums";
 import { toUpload } from "@/lib/files";
 import NewAlbumButton from "./NewAlbumButton";
 
@@ -10,21 +11,31 @@ const siteName = ">";
 
 /**
  * The dark bar on top of the public pages. An admin also gets an Admin link and the New album and Upload buttons: the
- * photos are uploaded as media in no album, so they show on the front page; onUploaded is called after.
+ * photos and the new album are added to the end of albumId, the album being viewed (or left in no album without one);
+ * onUploaded is called after the photos are in.
  */
-export default function SiteHeader({ onUploaded }: { onUploaded?: () => void }) {
+export default function SiteHeader({ albumId, onUploaded }: { albumId?: string; onUploaded?: () => void }) {
   const [user, setUser] = useState<User | null>(null);
   const [upload, setUpload] = useState<{ done: number; total: number } | null>(null);
   const [failed, setFailed] = useState<string[]>([]);
 
   async function uploadFiles(files: File[]) {
     setFailed([]);
+    const uploaded: Child[] = [];
     for (const [index, file] of files.entries()) {
       setUpload({ done: index, total: files.length });
       try {
-        await media.create(await toUpload(file));
+        uploaded.push({ type: "media", value: await media.create({ ...(await toUpload(file)), album: albumId }) });
       } catch (e) {
         setFailed((current) => [...current, `${file.name}: ${e instanceof Error ? e.message : String(e)}`]);
+      }
+    }
+    if (albumId && uploaded.length) {
+      try {
+        await appendChilds(albumId, uploaded);
+      } catch (e) {
+        const reason = e instanceof Error ? e.message : String(e);
+        setFailed((current) => [...current, `adding the photos to the album: ${reason}`]);
       }
     }
     setUpload(null);
@@ -58,7 +69,7 @@ export default function SiteHeader({ onUploaded }: { onUploaded?: () => void }) 
               Admin
             </Link>
           )}
-          {user?.role === "admin" && <NewAlbumButton />}
+          {user?.role === "admin" && <NewAlbumButton parentId={albumId} />}
           {user?.role === "admin" && (
             <label
               className={`flex h-9 items-center gap-2 rounded-md bg-[#2f6fed] px-4 font-semibold focus-within:outline-2 focus-within:outline-white ${

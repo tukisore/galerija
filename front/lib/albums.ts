@@ -1,5 +1,22 @@
-import type { Album, Media } from "./api";
+import { albums, type Album, type Child, type Media } from "./api";
 import { isImage } from "./files";
+
+/** Name of the album the front page opens; it is shown with a hero photo instead of its title. */
+export const FRONT_ALBUM = "Pagrindinis";
+
+/** Adds childs at the end of the album, on top of its latest saved contents. */
+export async function appendChilds(id: string, added: Child[]): Promise<Album> {
+  const album = await albums.get(id);
+  return albums.update(id, {
+    name: album.name,
+    startDate: album.startDate ?? "",
+    endDate: album.endDate,
+    description: album.description,
+    public: album.public,
+    hoverImage: album.hoverImage,
+    childs: [...(album.childs ?? []), ...added],
+  });
+}
 
 /** The first image in the album or its sub-albums. */
 export function firstImage(album: Album): Media | undefined {

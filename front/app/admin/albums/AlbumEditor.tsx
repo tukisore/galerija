@@ -62,7 +62,8 @@ export default function AlbumEditor({
     for (const [index, file] of files.entries()) {
       setUpload({ done: index, total: files.length });
       try {
-        const value = await media.create(await toUpload(file));
+        // a new album has no id, and so no folder, until it is saved
+        const value = await media.create({ ...(await toUpload(file)), album: album.id || undefined });
         add({ type: "media", value });
       } catch (e) {
         const reason = e instanceof Error ? e.message : String(e);
